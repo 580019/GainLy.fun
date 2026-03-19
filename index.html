@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+  
+  <title>Money Tracker</title>
+  
+  <style>
+   /* Mobile-First Design */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0b1220;
+  --panel: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #f5f7ff;
+  --muted: rgba(245, 247, 255, 0.7);
+  --accent: #6fe7c2;
+  --danger: #ff5f7a;
+  --success: #6fe7c2;
+  --radius: 12px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --spacing: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1b2744 0%, #070a12 60%);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Topbar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px var(--spacing);
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 12px;
+}
+
+.topbar h1 {
+  flex: 1;
+  text-align: center;
+  font-size: 0.75rem;
+  background: linear-gradient(135deg, var(--text), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.topbar__menu {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Dashboard Compact */
+.dashboard-compact {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px var(--spacing);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.dashboard-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.dashboard-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* Buttons */
+.btn {
+  appearance: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+  min-height: 40px;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn--icon {
+  padding: 8px;
+  font-size: 0.7rem;
+  border: none;
+  background: transparent;
+  line-height: 1;
+  min-height: auto;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn--small {
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  min-height: auto;
+}
+
+.btn--primary {
+  border-color: rgba(111, 231, 194, 0.5);
+  background: rgba(111, 231, 194, 0.15);
+  color: var(--accent);
+}
+
+.btn--primary:hover {
+  background: rgba(111, 231, 194, 0.25);
+  border-color: var(--accent);
+}
+
+.btn--secondary {
+  background: rgba(111, 231, 194, 0.1);
+  border-color: rgba(111, 231, 194, 0.3);
+  color: var(--accent);
+}
+
+.btn--secondary:hover {
+  background: rgba(111, 231, 194, 0.15);
+  border-color: rgba(111, 231, 194, 0.5);
+}
+
+/* Layout */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 70px);
+  position: relative;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  left: -100%;
+  top: 70px;
+  width: 100%;
+  height: calc(100vh - 70px);
+  background: rgba(11, 18, 32, 0.98);
+  border-right: 1px solid var(--border);
+  padding: var(--spacing);
+  z-index: 50;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 280px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sidebar.active {
+  left: 0;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sidebar__header h2 {
+  font-size: 1rem;
+  flex: 1;
+}
+
+.group-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.group-list__item:active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(111, 231, 194, 0.3);
+}
+
+.group-list__item--active {
+  border-color: var(--accent);
+  background: rgba(111, 231, 194, 0.15);
+}
+
+.group-list__name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-list__remove {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.group-list__remove:active {
+  background: rgba(255, 95, 122, 0.15);
+  color: var(--danger);
+  opacity: 1;
+}
+
+/* Content */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacing);
+  flex: 1;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.content__header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.content__header h2 {
+  font-size: 1.05rem;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0;
+}
+
+/* Group Totals */
+.group-totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.group-total-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(111, 231, 194, 0.15);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+
+.group-total-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.group-total-value {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Filters */
+.content__filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  animation: slideDown 0.25s ease;
+}
+
+.content__filters[hidden] {
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-item label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.filter-item input,
+.filter-item select {
+  width: 100%;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Form */
+.transaction-form {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.transaction-form h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  outline: none;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(245, 247, 255, 0.4);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(111, 231, 194, 0.12);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.form-actions .btn {
+  width: 100%;
+}
+
+/* Transactions Table */
+.transactions-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  flex: 1;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.transactions {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.transactions thead {
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1.5px solid rgba(111, 231, 194, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.transactions th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.transactions tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.transactions tbody tr:active {
+  background: rgba(111, 231, 194, 0.08);
+}
+
+.transactions td {
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--text);
+}
+
+.transactions td:nth-child(2),
+.transactions td:nth-child(4) {
+  font-weight: 600;
+}
+
+.transactions td:nth-child(1) {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.transactions td.type-buy {
+  color: #6fe7c2;
+}
+
+.transactions td.type-sell {
+  color: #ff5f7a;
+}
+
+.transactions td:last-child {
+  text-align: right;
+}
+
+.transactions button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  margin-right: 3px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.transactions button:active {
+  color: var(--text);
+  background: rgba(111, 231, 194, 0.12);
+}
+
+.transactions button:last-child:active {
+  color: var(--danger);
+  background: rgba(255, 95, 122, 0.12);
+}
+
+/* Utility Classes */
+.positive {
+  color: #6fe7c2;
+  font-weight: 700;
+}
+
+.negative {
+  color: #ff5f7a;
+  font-weight: 700;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+}
+
+.modal-content {
+  position: relative;
+  z-index: 1001;
+  background: rgba(11, 18, 32, 0.98);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: scaleIn 0.2s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-content h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.modal-content p {
+  margin: 0 0 20px 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  outline: none;
+  font-size: 0.95rem;
+  font-family: inherit;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.modal-content input::placeholder {
+  color: rgba(245, 247, 255, 0.4);
+}
+
+.modal-content input:focus {
+  border-color: var(--accent);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(111, 231, 194, 0.12);
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn--danger {
+  border-color: rgba(255, 95, 122, 0.5);
+  background: rgba(255, 95, 122, 0.15);
+  color: var(--danger);
+}
+
+.btn--danger:hover {
+  background: rgba(255, 95, 122, 0.25);
+  border-color: var(--danger);
+}
+
+/* Hide Scrollbars */
+::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sidebar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.content {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.transactions-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Tablet (640px and up) */
+@media (min-width: 640px) {
+  :root {
+    --spacing: 16px;
+  }
+
+  .topbar {
+    padding: 14px var(--spacing);
+  }
+
+  .topbar h1 {
+    font-size: 1.2rem;
+  }
+
+  .sidebar {
+    width: 280px;
+    max-width: none;
+  }
+
+  .content {
+    padding: var(--spacing);
+  }
+
+  .dashboard-compact {
+    gap: 10px;
+    padding: 10px var(--spacing);
+  }
+
+  .dashboard-item {
+    padding: 10px;
+  }
+
+  .dashboard-value {
+    font-size: 1rem;
+  }
+
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .transactions {
+    font-size: 0.9rem;
+  }
+
+  .transactions th,
+  .transactions td {
+    padding: 12px;
+  }
+
+  .transaction-form {
+    padding: 16px;
+    gap: 13px;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 11px 13px;
+    font-size: 0.95rem;
+  }
+
+  .group-totals {
+    gap: 10px;
+  }
+
+  .group-total-item {
+    padding: 12px;
+  }
+}
+
+/* Desktop (1024px and up) */
+@media (min-width: 1024px) {
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    padding: 24px var(--spacing);
+    max-width: 1400px;
+    margin: 0 auto;
+    height: auto;
+    flex-direction: row;
+  }
+
+  .sidebar {
+    position: static;
+    left: auto;
+    top: auto;
+    width: auto;
+    height: auto;
+    background: transparent;
+    border: none;
+    padding: 0;
+    z-index: auto;
+  }
+
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+  #toggle-sidebar {
+    display: none;
+  }
+
+  .content {
+    padding: 0;
+  }
+
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .topbar h1 {
+    flex: 0 0 auto;
+    text-align: left;
+    font-size: 1.3rem;
+  }
+
+  .topbar__menu {
+    gap: 10px;
+  }
+
+  .dashboard-compact {
+    display: none;
+  }
+
+  .group-totals {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .group-total-item {
+    padding: 14px;
+  }
+
+  .transaction-form {
+    padding: 18px;
+  }
+
+  .transactions {
+    font-size: 0.95rem;
+  }
+
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .transactions th {
+    padding: 14px;
+  }
+
+  .transactions td {
+    padding: 14px;
+  }
+
+  .form-actions {
+    grid-template-columns: auto auto;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .form-actions .btn {
+    width: auto;
+    min-width: 100px;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 11px 13px;
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    min-height: 42px;
+  }
+
+  .btn--icon {
+    min-height: auto;
+    width: 42px;
+    height: 42px;
+  }
+}
+
+/* Large Desktop (1280px and up) */
+@media (min-width: 1280px) {
+  .layout {
+    max-width: 1600px;
+  }
+
+  .topbar {
+    padding: 16px 24px;
+  }
+
+  .content {
+    gap: 2px;
+  }
+}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <button id="toggle-sidebar" class="btn btn--icon" type="button" title="Toggle groups" aria-label="Toggle groups sidebar">☰</button>
+  
+    <h1>Gainly</h1>
+    <div class="topbar__menu">
+      <button id="export-data" class="btn btn--icon" type="button" title="Export">⤒ Export</button>
+      <button id="import-data" class="btn btn--icon" type="button" title="Import">⤓ Import</button>
+      <input id="import-file" type="file" accept="application/json" hidden />
+    </div>
+  </header>
+
+  <div class="dashboard-compact" aria-label="Overall totals">
+    <div class="dashboard-item">
+      <span class="dashboard-label">Total Sales</span>
+      <span class="dashboard-value" id="dashboard-sell">₱0.00</span>
+    </div>
+    <div class="dashboard-item">
+      <span class="dashboard-label">Total Cost</span>
+      <span class="dashboard-value" id="dashboard-buy">₱0.00</span>
+    </div>
+    <div class="dashboard-item">
+      <span class="dashboard-label">Total Profit</span>
+      <span class="dashboard-value" id="dashboard-profit">₱0.00</span>
+    </div>
+  </div>
+
+  <main class="layout">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
+    <aside class="sidebar" id="sidebar" aria-label="Groups">
+      <div class="sidebar__header">
+        <h2>Groups</h2>
+        <button id="add-group" class="btn btn--small btn--primary" type="button">+ Add</button>
+      </div>
+      <ul id="group-list" class="group-list" role="list"></ul>
+    </aside>
+
+    <section class="content" aria-label="Transactions">
+      <div class="content__header">
+        <h2 id="group-title">Select a group</h2>
+        
+        <div class="group-totals" aria-label="Group totals">
+          <div class="group-total-item">
+            <span class="group-total-label">Sell</span>
+            <span class="group-total-value" id="group-sell">₱0.00</span>
+          </div>
+          <div class="group-total-item">
+            <span class="group-total-label">Buy</span>
+            <span class="group-total-value" id="group-buy">₱0.00</span>
+          </div>
+          <div class="group-total-item">
+            <span class="group-total-label">Profit</span>
+            <span class="group-total-value" id="group-profit">₱0.00</span>
+          </div>
+        </div>
+
+        <button id="toggle-search" class="btn btn--secondary" type="button">⌕ Filter</button>
+        
+        <div class="content__filters" hidden id="search-filters">
+          <div class="filter-item">
+            <label>Search Item</label>
+            <input id="search-query" type="search" placeholder="Search..." />
+          </div>
+          <div class="filter-row">
+            <div class="filter-item">
+              <label>From</label>
+              <input id="filter-start" type="date" />
+            </div>
+            <div class="filter-item">
+              <label>To</label>
+              <input id="filter-end" type="date" />
+            </div>
+          </div>
+          <button id="clear-filters" class="btn btn--secondary" type="button">Clear</button>
+        </div>
+      </div>
+
+      <form id="transaction-form" class="transaction-form" aria-label="Add transaction">
+        <h3>Add Transaction</h3>
+        
+        <label>
+          Type
+          <select id="transaction-type" required>
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+          </select>
+        </label>
+        
+        <label>
+          Item
+          <div id="item-field-wrapper">
+            <input id="transaction-item" type="text" placeholder="e.g. Keyboard" required />
+            <select id="transaction-item-dropdown" hidden required>
+              <option value="">Select an item...</option>
+            </select>
+          </div>
+        </label>
+        
+        <label>
+          Amount
+          <input id="transaction-amount" type="number" min="0" step="0.01" placeholder="0.00" required />
+        </label>
+        
+        <label>
+          Date
+          <input id="transaction-date" type="date" required />
+        </label>
+        
+        <label>
+          Notes
+          <textarea id="transaction-notes" rows="2" placeholder="Optional"></textarea>
+        </label>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary" id="transaction-save">Save</button>
+          <button type="button" class="btn btn--secondary" id="transaction-cancel" hidden>Cancel</button>
+        </div>
+      </form>
+
+      <div class="transactions-container">
+        <table class="transactions" aria-label="Transactions list">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Item</th>
+              <th>Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="transaction-list"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+
+  <div class="modal" id="confirmation-modal" hidden>
+    <div class="modal-content">
+      <h3>Confirm Delete</h3>
+      <p id="modal-message">Are you sure?</p>
+      <div class="modal-actions">
+        <button id="modal-confirm" class="btn btn--danger">Delete</button>
+        <button id="modal-cancel" class="btn btn--secondary">Cancel</button>
+      </div>
+    </div>
+    <div class="modal-overlay" id="modal-overlay"></div>
+  </div>
+
+  <!-- Add Group Modal -->
+  <div class="modal" id="add-group-modal" hidden>
+    <div class="modal-content">
+      <h3>Create New Group</h3>
+      <input id="group-name-input" type="text" placeholder="Enter group name..." maxlength="50" />
+      <div class="modal-actions">
+        <button id="group-create-btn" class="btn btn--primary">Create</button>
+        <button id="group-cancel-btn" class="btn btn--secondary">Cancel</button>
+      </div>
+    </div>
+    <div class="modal-overlay" id="group-modal-overlay"></div>
+  </div>
+
+
+</body>
+</html>
+
+<script>
+const STORAGE_KEY = "mtrack:data";
+
+const elements = {
+  groupList: document.getElementById("group-list"),
+  groupTitle: document.getElementById("group-title"),
+  addGroup: document.getElementById("add-group"),
+  
+  sidebar: document.getElementById("sidebar"),
+  sidebarOverlay: document.getElementById("sidebar-overlay"),
+  toggleSidebar: document.getElementById("toggle-sidebar"),
+
+  transactionForm: document.getElementById("transaction-form"),
+  transactionType: document.getElementById("transaction-type"),
+  transactionItem: document.getElementById("transaction-item"),
+  transactionItemDropdown: document.getElementById("transaction-item-dropdown"),
+  transactionNotes: document.getElementById("transaction-notes"),
+  transactionAmount: document.getElementById("transaction-amount"),
+  transactionDate: document.getElementById("transaction-date"),
+  transactionSave: document.getElementById("transaction-save"),
+  transactionCancel: document.getElementById("transaction-cancel"),
+  transactionList: document.getElementById("transaction-list"),
+
+  toggleSearch: document.getElementById("toggle-search"),
+  searchFilters: document.getElementById("search-filters"),
+  searchQuery: document.getElementById("search-query"),
+  filterStart: document.getElementById("filter-start"),
+  filterEnd: document.getElementById("filter-end"),
+  clearFilters: document.getElementById("clear-filters"),
+
+  exportData: document.getElementById("export-data"),
+  importData: document.getElementById("import-data"),
+  importFile: document.getElementById("import-file"),
+
+  dashboardBuy: document.getElementById("dashboard-buy"),
+  dashboardSell: document.getElementById("dashboard-sell"),
+  dashboardProfit: document.getElementById("dashboard-profit"),
+  groupBuy: document.getElementById("group-buy"),
+  groupSell: document.getElementById("group-sell"),
+  groupProfit: document.getElementById("group-profit"),
+};
+
+let store = {
+  groups: [],
+  activeGroupId: null,
+};
+
+const uiState = {
+  search: "",
+  startDate: "",
+  endDate: "",
+  editingTransactionId: null,
+  pendingDeleteGroupId: null,
+};
+
+// Modal elements
+const modalElements = {
+  modal: document.getElementById("confirmation-modal"),
+  overlay: document.getElementById("modal-overlay"),
+  message: document.getElementById("modal-message"),
+  confirmBtn: document.getElementById("modal-confirm"),
+  cancelBtn: document.getElementById("modal-cancel"),
+};
+
+// Add Group Modal elements
+const groupModalElements = {
+  modal: document.getElementById("add-group-modal"),
+  overlay: document.getElementById("group-modal-overlay"),
+  nameInput: document.getElementById("group-name-input"),
+  createBtn: document.getElementById("group-create-btn"),
+  cancelBtn: document.getElementById("group-cancel-btn"),
+};
+
+function readFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn("Failed to parse storage", err);
+    return null;
+  }
+}
+
+function showConfirmationModal(message, onConfirm) {
+  uiState.pendingDeleteGroupId = null;
+  modalElements.message.textContent = message;
+  modalElements.modal.removeAttribute("hidden");
+  
+  const handleConfirm = () => {
+    onConfirm();
+    closeConfirmationModal();
+  };
+  
+  const handleCancel = () => {
+    closeConfirmationModal();
+  };
+  
+  modalElements.confirmBtn.onclick = handleConfirm;
+  modalElements.cancelBtn.onclick = handleCancel;
+  modalElements.overlay.onclick = handleCancel;
+}
+
+function closeConfirmationModal() {
+  modalElements.modal.setAttribute("hidden", "");
+  modalElements.confirmBtn.onclick = null;
+  modalElements.cancelBtn.onclick = null;
+  modalElements.overlay.onclick = null;
+}
+
+function showAddGroupModal() {
+  groupModalElements.nameInput.value = "";
+  groupModalElements.modal.removeAttribute("hidden");
+  groupModalElements.nameInput.focus();
+}
+
+function closeAddGroupModal() {
+  groupModalElements.modal.setAttribute("hidden", "");
+  groupModalElements.nameInput.value = "";
+}
+
+function handleAddGroup() {
+  const name = groupModalElements.nameInput.value.trim();
+  if (!name) {
+    alert("Please enter a group name");
+    return;
+  }
+  addGroup(name);
+  closeAddGroupModal();
+}
+
+function writeToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+function createId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function formatCurrency(value) {
+  const num = Number(value) || 0;
+  return num.toLocaleString('en-PH', {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function calculateTotals(transactions) {
+  return transactions.reduce(
+    (acc, tx) => {
+      const amount = Number(tx.amount) || 0;
+      if (tx.type === "buy") {
+        acc.buy += amount;
+      } else {
+        acc.sell += amount;
+      }
+      return acc;
+    },
+    { buy: 0, sell: 0 }
+  );
+}
+
+function renderProfit(element, profit) {
+  element.textContent = profit >= 0 ? formatCurrency(profit) : `-${formatCurrency(Math.abs(profit))}`;
+  element.classList.remove("positive", "negative");
+  element.classList.add(profit >= 0 ? "positive" : "negative");
+}
+
+function getFilteredTransactions(transactions) {
+  return transactions.filter((tx) => {
+    const search = uiState.search.trim().toLowerCase();
+    const item = (tx.item || "").toLowerCase();
+
+    if (search && !item.includes(search)) {
+      return false;
+    }
+
+    if (uiState.startDate && tx.date < uiState.startDate) {
+      return false;
+    }
+
+    if (uiState.endDate && tx.date > uiState.endDate) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function getBoughtItems(group) {
+  if (!group) return [];
+  return [...new Set(
+    group.transactions
+      .filter((tx) => tx.type === "buy")
+      .map((tx) => tx.item)
+      .filter(Boolean)
+  )].sort();
+}
+
+function populateItemDropdown() {
+  const group = getActiveGroup();
+  elements.transactionItemDropdown.innerHTML = '<option value="">Select an item...</option>';
+  
+  if (!group) return;
+  
+  const items = getBoughtItems(group);
+  items.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item;
+    option.textContent = item;
+    elements.transactionItemDropdown.appendChild(option);
+  });
+}
+
+function updateItemField() {
+  const type = elements.transactionType.value;
+  const isSell = type === "sell";
+  
+  if (isSell) {
+    elements.transactionItem.hidden = true;
+    elements.transactionItemDropdown.hidden = false;
+    elements.transactionItemDropdown.required = true;
+    populateItemDropdown();
+  } else {
+    elements.transactionItem.hidden = false;
+    elements.transactionItemDropdown.hidden = true;
+    elements.transactionItemDropdown.required = false;
+  }
+}
+
+function closeSidebar() {
+  elements.sidebar.classList.remove("active");
+  elements.sidebarOverlay.classList.remove("active");
+}
+
+function toggleSidebar() {
+  elements.sidebar.classList.toggle("active");
+  elements.sidebarOverlay.classList.toggle("active");
+}
+
+function toggleSearchFilters() {
+  const isHidden = elements.searchFilters.hasAttribute("hidden");
+  if (isHidden) {
+    elements.searchFilters.removeAttribute("hidden");
+    elements.toggleSearch.classList.add("active");
+  } else {
+    elements.searchFilters.setAttribute("hidden", "");
+    elements.toggleSearch.classList.remove("active");
+  }
+}
+
+function startEditTransaction(transaction) {
+  uiState.editingTransactionId = transaction.id;
+  elements.transactionSave.textContent = "Update";
+  elements.transactionCancel.hidden = false;
+
+  elements.transactionType.value = transaction.type;
+  updateItemField();
+  
+  if (transaction.type === "sell") {
+    elements.transactionItemDropdown.value = transaction.item;
+  } else {
+    elements.transactionItem.value = transaction.item;
+  }
+  
+  elements.transactionNotes.value = transaction.notes || "";
+  elements.transactionAmount.value = transaction.amount;
+  elements.transactionDate.value = transaction.date;
+  
+  const focusElement = transaction.type === "sell" ? elements.transactionItemDropdown : elements.transactionItem;
+  focusElement.focus();
+}
+
+function exitEditMode() {
+  uiState.editingTransactionId = null;
+  elements.transactionSave.textContent = "Save";
+  elements.transactionCancel.hidden = true;
+  elements.transactionForm.reset();
+  const today = new Date().toISOString().slice(0, 10);
+  elements.transactionDate.value = today;
+  
+  // Reset to buy mode
+  elements.transactionType.value = "buy";
+  updateItemField();
+}
+
+function updateTransaction(id, updated) {
+  const group = getActiveGroup();
+  if (!group) return;
+  const transaction = group.transactions.find((tx) => tx.id === id);
+  if (!transaction) return;
+  Object.assign(transaction, {
+    type: updated.type,
+    item: updated.item.trim(),
+    notes: updated.notes || "",
+    amount: Number(updated.amount),
+    date: updated.date,
+  });
+  writeToStorage();
+  render();
+}
+
+function validateImportedData(data) {
+  if (!data || typeof data !== "object") return false;
+  if (!Array.isArray(data.groups)) return false;
+
+  for (const group of data.groups) {
+    if (!group || typeof group !== "object") return false;
+    if (!group.id || !group.name) return false;
+    if (!Array.isArray(group.transactions)) return false;
+
+    for (const tx of group.transactions) {
+      if (!tx || typeof tx !== "object") return false;
+      if (!tx.id || !tx.type || !tx.item) return false;
+      if (typeof tx.amount !== "number" && typeof tx.amount !== "string") return false;
+      if (!tx.date) return false;
+    }
+  }
+
+  return true;
+}
+
+function ensureUniqueIds(data) {
+  const seen = new Set();
+
+  for (const group of data.groups) {
+    if (!group.id || seen.has(group.id)) {
+      group.id = createId();
+    }
+    seen.add(group.id);
+
+    if (!Array.isArray(group.transactions)) {
+      group.transactions = [];
+    }
+
+    for (const tx of group.transactions) {
+      if (!tx.id || seen.has(tx.id)) {
+        tx.id = createId();
+      }
+      seen.add(tx.id);
+    }
+  }
+}
+
+function exportData() {
+  const jsonData = JSON.stringify(store, null, 2);
+  
+  // Prompt user for custom filename
+  let userFileName = prompt("Enter filename for export (without .json extension):", "mtrack-data");
+  
+  if (userFileName === null) {
+    // User cancelled
+    return;
+  }
+  
+  // Clean filename and add .json extension
+  userFileName = userFileName.trim().replace(/\s+/g, "-").replace(/[^a-zA-Z0-9-_]/g, "");
+  if (!userFileName) {
+    alert("Invalid filename. Using default name.");
+    userFileName = "mtrack-data";
+  }
+  
+  const fileName = userFileName + ".json";
+
+  // Check if Cordova is available (mobile app)
+  if (window.cordova) {
+    exportDataCordova(jsonData, fileName);
+  } else {
+    // Web browser fallback
+    exportDataWeb(jsonData, fileName);
+  }
+}
+
+function exportDataWeb(jsonData, fileName) {
+  const blob = new Blob([jsonData], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  URL.revokeObjectURL(url);
+  anchor.remove();
+}
+
+function exportDataCordova(jsonData, fileName) {
+  window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, (dirEntry) => {
+    dirEntry.getFile(fileName, { create: true }, (fileEntry) => {
+      fileEntry.createWriter((fileWriter) => {
+        fileWriter.onwriteend = () => {
+          alert("✓ Data exported successfully!\n\nFile: " + fileName + "\nLocation: Android/data/com.gainly.track/files/\n\nYou can find it in your file manager.");
+          console.log("File saved at: " + fileEntry.fullPath);
+        };
+        fileWriter.onerror = (e) => {
+          alert("Error exporting data: " + e.name);
+        };
+        fileWriter.write(jsonData);
+      });
+    }, (error) => {
+      alert("Error creating file: " + error.code);
+    });
+  }, (error) => {
+    // Fallback to documents directory if external data directory not available
+    window.resolveLocalFileSystemURL(cordova.file.documentsDirectory, (dirEntry) => {
+      dirEntry.getFile(fileName, { create: true }, (fileEntry) => {
+        fileEntry.createWriter((fileWriter) => {
+          fileWriter.onwriteend = () => {
+            alert("✓ Data exported successfully!\n\nFile: " + fileName + "\nLocation: App Documents folder\n\nYou can find it in your file manager.");
+          };
+          fileWriter.onerror = (e) => {
+            alert("Error exporting data: " + e.name);
+          };
+          fileWriter.write(jsonData);
+        });
+      }, (error) => {
+        alert("Error creating file: " + error.code);
+      });
+    }, (error) => {
+      alert("Could not access file system: " + error.code);
+    });
+  });
+}
+
+function importDataFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!validateImportedData(data)) {
+        alert("Invalid data format. Please import a valid JSON export.");
+        return;
+      }
+
+      const confirmed = confirm("Replace current data with imported data?\nThis cannot be undone.");
+      if (!confirmed) return;
+
+      ensureUniqueIds(data);
+      store = data;
+      if (!store.activeGroupId && store.groups.length) {
+        store.activeGroupId = store.groups[0].id;
+      }
+      writeToStorage();
+      exitEditMode();
+      render();
+    } catch (error) {
+      alert("Could not parse file. Make sure it's a valid JSON file.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function setActiveGroup(id) {
+  store.activeGroupId = id;
+  writeToStorage();
+  render();
+}
+
+function getActiveGroup() {
+  return store.groups.find((g) => g.id === store.activeGroupId);
+}
+
+function addGroup(name) {
+  const id = createId();
+  store.groups.push({ id, name: name.trim(), transactions: [] });
+  store.activeGroupId = id;
+  writeToStorage();
+  render();
+}
+
+function removeGroup(id) {
+  showConfirmationModal("Delete this group and all its transactions?\nThis cannot be undone.", () => {
+    store.groups = store.groups.filter((g) => g.id !== id);
+    if (store.activeGroupId === id) {
+      store.activeGroupId = store.groups.length ? store.groups[0].id : null;
+    }
+    writeToStorage();
+    render();
+  });
+}
+
+function addTransaction({ type, item, amount, date, notes }) {
+  const group = getActiveGroup();
+  if (!group) return;
+  group.transactions.push({
+    id: createId(),
+    type,
+    item: item.trim(),
+    notes: notes || "",
+    amount: Number(amount),
+    date,
+  });
+  writeToStorage();
+  render();
+}
+
+function removeTransaction(transactionId) {
+  const confirmed = confirm("Delete this transaction?\nThis cannot be undone.");
+  if (!confirmed) return;
+
+  const group = getActiveGroup();
+  if (!group) return;
+  group.transactions = group.transactions.filter((tx) => tx.id !== transactionId);
+  writeToStorage();
+  render();
+}
+
+function renderGroupList() {
+  elements.groupList.innerHTML = "";
+
+  store.groups.forEach((group) => {
+    const li = document.createElement("li");
+    li.className = "group-list__item";
+
+    if (group.id === store.activeGroupId) {
+      li.classList.add("group-list__item--active");
+    }
+
+    const name = document.createElement("span");
+    name.className = "group-list__name";
+    name.textContent = group.name;
+    name.addEventListener("click", () => setActiveGroup(group.id));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "group-list__remove";
+    remove.title = "Delete group";
+    remove.textContent = "×";
+    remove.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeGroup(group.id);
+    });
+
+    li.append(name, remove);
+    elements.groupList.appendChild(li);
+  });
+
+  if (!store.groups.length) {
+    const empty = document.createElement("p");
+    empty.style.color = "rgba(245, 247, 255, 0.6)";
+    empty.style.margin = "0";
+    empty.textContent = "Create a group to get started.";
+    elements.groupList.appendChild(empty);
+  }
+}
+
+function renderDashboard() {
+  const totals = store.groups.reduce(
+    (acc, group) => {
+      const groupTotals = calculateTotals(group.transactions);
+      acc.buy += groupTotals.buy;
+      acc.sell += groupTotals.sell;
+      return acc;
+    },
+    { buy: 0, sell: 0 }
+  );
+
+  const profit = totals.sell - totals.buy;
+  elements.dashboardBuy.textContent = formatCurrency(totals.buy);
+  elements.dashboardSell.textContent = formatCurrency(totals.sell);
+  renderProfit(elements.dashboardProfit, profit);
+}
+
+function renderGroupDetails() {
+  const active = getActiveGroup();
+  if (!active) {
+    elements.groupTitle.textContent = "Select a group";
+    elements.transactionForm.style.opacity = "0.45";
+    elements.transactionForm.style.pointerEvents = "none";
+    elements.transactionList.innerHTML = "";
+    elements.groupBuy.textContent = "$0.00";
+    elements.groupSell.textContent = "$0.00";
+    elements.groupProfit.textContent = "$0.00";
+    return;
+  }
+
+  elements.transactionForm.style.opacity = "1";
+  elements.transactionForm.style.pointerEvents = "auto";
+  elements.groupTitle.textContent = active.name;
+
+  const totals = calculateTotals(active.transactions);
+  const profit = totals.sell - totals.buy;
+
+  elements.groupBuy.textContent = formatCurrency(totals.buy);
+  elements.groupSell.textContent = formatCurrency(totals.sell);
+  renderProfit(elements.groupProfit, profit);
+
+  elements.transactionList.innerHTML = "";
+
+  const filtered = getFilteredTransactions(active.transactions);
+  const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (!active.transactions.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.style.textAlign = "center";
+    td.style.padding = "24px 0";
+    td.style.color = "rgba(245, 247, 255, 0.55)";
+    td.textContent = "No transactions yet.";
+    tr.appendChild(td);
+    elements.transactionList.appendChild(tr);
+    return;
+  }
+
+  if (!sorted.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.style.textAlign = "center";
+    td.style.padding = "24px 0";
+    td.style.color = "rgba(245, 247, 255, 0.55)";
+    td.textContent = "No transactions match the filters.";
+    tr.appendChild(td);
+    elements.transactionList.appendChild(tr);
+    return;
+  }
+
+  sorted.forEach((tx) => {
+    const tr = document.createElement("tr");
+
+    const dateTd = document.createElement("td");
+    dateTd.textContent = tx.date;
+
+    const typeTd = document.createElement("td");
+    typeTd.textContent = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+    typeTd.className = tx.type === "buy" ? "type-buy" : "type-sell";
+
+    const itemTd = document.createElement("td");
+    itemTd.textContent = tx.item;
+
+    const amountTd = document.createElement("td");
+    amountTd.textContent = formatCurrency(tx.amount);
+
+    const actionTd = document.createElement("td");
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.textContent = "Edit";
+    editBtn.addEventListener("click", () => startEditTransaction(tx));
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.textContent = "Delete";
+    removeBtn.addEventListener("click", () => removeTransaction(tx.id));
+
+    actionTd.append(editBtn, removeBtn);
+
+    tr.append(dateTd, typeTd, itemTd, amountTd, actionTd);
+    elements.transactionList.appendChild(tr);
+  });
+}
+
+function render() {
+  renderGroupList();
+  renderDashboard();
+  renderGroupDetails();
+}
+
+function init() {
+  const saved = readFromStorage();
+  if (saved && Array.isArray(saved.groups)) {
+    store = saved;
+  }
+
+  if (!store.groups.length) {
+    store.groups = [
+      {
+        id: createId(),
+        name: "General",
+        transactions: [],
+      },
+    ];
+    store.activeGroupId = store.groups[0].id;
+  }
+
+  // Set default date to today
+  const today = new Date().toISOString().slice(0, 10);
+  elements.transactionDate.value = today;
+
+  render();
+  exitEditMode();
+
+  elements.addGroup.addEventListener("click", () => {
+    showAddGroupModal();
+  });
+
+  groupModalElements.createBtn.addEventListener("click", handleAddGroup);
+  groupModalElements.cancelBtn.addEventListener("click", closeAddGroupModal);
+  groupModalElements.overlay.addEventListener("click", closeAddGroupModal);
+  
+  groupModalElements.nameInput.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+      handleAddGroup();
+    }
+  });
+
+  elements.transactionForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const type = elements.transactionType.value;
+    const item = (type === "sell" ? elements.transactionItemDropdown.value : elements.transactionItem.value).trim();
+    const amount = elements.transactionAmount.value;
+    const date = elements.transactionDate.value;
+    const notes = elements.transactionNotes.value.trim();
+
+    if (!item || !amount || !date) return;
+
+    if (uiState.editingTransactionId) {
+      updateTransaction(uiState.editingTransactionId, { type, item, amount, date, notes });
+      exitEditMode();
+    } else {
+      addTransaction({ type, item, amount, date, notes });
+    }
+
+    elements.transactionItem.value = "";
+    elements.transactionItemDropdown.value = "";
+    elements.transactionNotes.value = "";
+    elements.transactionAmount.value = "";
+    elements.transactionType.value = "buy";
+    elements.transactionDate.value = today;
+    updateItemField();
+  });
+
+  elements.transactionType.addEventListener("change", updateItemField);
+
+  elements.transactionCancel.addEventListener("click", () => {
+    exitEditMode();
+  });
+
+  elements.toggleSidebar.addEventListener("click", toggleSidebar);
+  elements.sidebarOverlay.addEventListener("click", closeSidebar);
+
+  elements.toggleSearch.addEventListener("click", toggleSearchFilters);
+
+  elements.searchQuery.addEventListener("input", (event) => {
+    uiState.search = event.target.value;
+    renderGroupDetails();
+  });
+
+  elements.filterStart.addEventListener("change", (event) => {
+    uiState.startDate = event.target.value;
+    renderGroupDetails();
+  });
+
+  elements.filterEnd.addEventListener("change", (event) => {
+    uiState.endDate = event.target.value;
+    renderGroupDetails();
+  });
+
+  elements.clearFilters.addEventListener("click", () => {
+    uiState.search = "";
+    uiState.startDate = "";
+    uiState.endDate = "";
+    elements.searchQuery.value = "";
+    elements.filterStart.value = "";
+    elements.filterEnd.value = "";
+    renderGroupDetails();
+  });
+
+  elements.exportData.addEventListener("click", exportData);
+  elements.importData.addEventListener("click", () => elements.importFile.click());
+  elements.importFile.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    importDataFromFile(file);
+    event.target.value = "";
+  });
+
+  // Close sidebar when clicking on a group on mobile
+  elements.groupList.addEventListener("click", () => {
+    if (window.innerWidth <= 768) {
+      closeSidebar();
+    }
+  });
+}
+
+init();
+
+</script>
