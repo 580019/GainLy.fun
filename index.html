@@ -6,8 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
 
   <title>Money Tracker</title>
-  <link rel="icon" type="image/png" href="Gainly.png" />
-  <link rel="icon" type="image/x-icon" href="gainly.ico">
+  <link rel="icon" type="image/png" href="res/Gainly.png" />
 
 
   <style>
@@ -100,11 +99,16 @@
     /* Dashboard Compact */
     .dashboard-compact {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(160px, 1fr);
       gap: 8px;
       padding: 8px var(--spacing);
       background: rgba(255, 255, 255, 0.03);
       border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      scroll-snap-type: x mandatory;
     }
 
     .dashboard-item {
@@ -116,6 +120,8 @@
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.05);
       text-align: center;
+      min-width: 160px;
+      scroll-snap-align: start;
     }
 
     .dashboard-label {
@@ -348,8 +354,13 @@
     /* Group Totals */
     .group-totals {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(180px, 1fr);
       gap: 8px;
+      overflow-x: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      padding-bottom: 2px;
     }
 
     .group-total-item {
@@ -361,6 +372,8 @@
       border-radius: 8px;
       padding: 10px;
       text-align: center;
+      scroll-snap-align: start;
+      min-width: 180px;
     }
 
     .group-total-label {
@@ -877,7 +890,9 @@
       }
 
       .group-totals {
-        grid-template-columns: repeat(3, 1fr);
+        grid-auto-flow: row;
+        grid-template-columns: repeat(5, 1fr);
+        overflow: visible;
         gap: 12px;
       }
 
@@ -991,6 +1006,10 @@
       <span class="dashboard-label">Total Profit</span>
       <span class="dashboard-value" id="dashboard-profit">₱0.00</span>
     </div>
+    <div class="dashboard-item">
+      <span class="dashboard-label">Total Cash</span>
+      <span class="dashboard-value" id="dashboard-cash">₱0.00</span>
+    </div>
   </div>
 
   <main class="layout">
@@ -1021,6 +1040,14 @@
             <span class="group-total-label">Profit</span>
             <span class="group-total-value" id="group-profit">₱0.00</span>
           </div>
+          <div class="group-total-item">
+            <span class="group-total-label">Cash</span>
+            <span class="group-total-value" id="group-cash">₱0.00</span>
+          </div>
+          <div class="group-total-item">
+            <span class="group-total-label">Receivable</span>
+            <span class="group-total-value" id="group-receivable">₱0.00</span>
+          </div>
         </div>
 
         <button id="toggle-search" class="btn btn--secondary" type="button">⌕ Filter</button>
@@ -1029,6 +1056,18 @@
           <div class="filter-item">
             <label>Search Item</label>
             <input id="search-query" type="search" placeholder="Search..." />
+          </div>
+          <div class="filter-item">
+            <label>Type</label>
+            <select id="filter-type">
+              <option value="">All</option>
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+              <option value="capital_in">Capital In</option>
+              <option value="withdrawal">Withdrawal</option>
+              <option value="lend_out">Lend Out</option>
+              <option value="lend_return">Lend Return</option>
+            </select>
           </div>
       <div class="filter-row">
   <div class="filter-item">
@@ -1062,6 +1101,10 @@
           <select id="transaction-type" required>
             <option value="buy">Buy</option>
             <option value="sell">Sell</option>
+            <option value="capital_in">Capital In</option>
+            <option value="withdrawal">Withdrawal</option>
+            <option value="lend_out">Lend Out</option>
+            <option value="lend_return">Lend Return</option>
           </select>
         </label>
 
@@ -1138,6 +1181,7 @@
     <div class="modal-content">
       <h3>Create New Group</h3>
       <input id="group-name-input" type="text" placeholder="Enter group name..." maxlength="50" />
+      <input id="group-starting-capital-input" type="number" placeholder="Starting capital (₱)" min="0" step="0.01" />
       <div class="modal-actions">
         <button id="group-create-btn" class="btn btn--primary">Create</button>
         <button id="group-cancel-btn" class="btn btn--secondary">Cancel</button>
@@ -1180,6 +1224,7 @@
     toggleSearch: document.getElementById("toggle-search"),
     searchFilters: document.getElementById("search-filters"),
     searchQuery: document.getElementById("search-query"),
+    filterType: document.getElementById("filter-type"),
     filterStart: document.getElementById("filter-start"),
     filterEnd: document.getElementById("filter-end"),
     clearFilters: document.getElementById("clear-filters"),
@@ -1193,9 +1238,12 @@
     dashboardBuy: document.getElementById("dashboard-buy"),
     dashboardSell: document.getElementById("dashboard-sell"),
     dashboardProfit: document.getElementById("dashboard-profit"),
+    dashboardCash: document.getElementById("dashboard-cash"),
     groupBuy: document.getElementById("group-buy"),
     groupSell: document.getElementById("group-sell"),
     groupProfit: document.getElementById("group-profit"),
+    groupCash: document.getElementById("group-cash"),
+    groupReceivable: document.getElementById("group-receivable"),
   };
 
   let store = {
@@ -1207,6 +1255,7 @@
     search: "",
     startDate: "",
     endDate: "",
+    typeFilter: "",
     editingTransactionId: null,
     pendingDeleteGroupId: null,
     sortOrder: "desc", // default: newest first
@@ -1226,6 +1275,7 @@
     modal: document.getElementById("add-group-modal"),
     overlay: document.getElementById("group-modal-overlay"),
     nameInput: document.getElementById("group-name-input"),
+    startingCapitalInput: document.getElementById("group-starting-capital-input"),
     createBtn: document.getElementById("group-create-btn"),
     cancelBtn: document.getElementById("group-cancel-btn"),
   };
@@ -1269,6 +1319,7 @@
 
   function showAddGroupModal() {
     groupModalElements.nameInput.value = "";
+    groupModalElements.startingCapitalInput.value = "";
     groupModalElements.modal.removeAttribute("hidden");
     groupModalElements.nameInput.focus();
   }
@@ -1284,11 +1335,13 @@
       alert("Please enter a group name");
       return;
     }
-    addGroup(name);
+    const startingCapital = Number(groupModalElements.startingCapitalInput.value) || 0;
+    addGroup(name, startingCapital);
     closeAddGroupModal();
   }
 
   function writeToStorage() {
+    updateComputedFields();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   }
 
@@ -1312,13 +1365,53 @@
         const amount = Number(tx.amount) || 0;
         if (tx.type === "buy") {
           acc.buy += amount;
-        } else {
+        } else if (tx.type === "sell") {
           acc.sell += amount;
         }
         return acc;
       },
       { buy: 0, sell: 0 }
     );
+  }
+
+  function computeGroupMetrics(group) {
+    const starting = Number(group.starting_capital) || 0;
+    let buy = 0, sell = 0, capitalIn = 0, withdrawal = 0, lendOut = 0, lendReturn = 0;
+    for (const tx of group.transactions) {
+      const amount = Number(tx.amount) || 0;
+      switch (tx.type) {
+        case "buy":
+          buy += amount;
+          break;
+        case "sell":
+          sell += amount;
+          break;
+        case "capital_in":
+          capitalIn += amount;
+          break;
+        case "withdrawal":
+          withdrawal += amount;
+          break;
+        case "lend_out":
+          lendOut += amount;
+          break;
+        case "lend_return":
+          lendReturn += amount;
+          break;
+      }
+    }
+    const profit = sell - buy;
+    const cash = starting + sell - buy + capitalIn - withdrawal - lendOut + lendReturn;
+    const receivable = lendOut - lendReturn;
+    return { buy, sell, profit, cash, receivable };
+  }
+
+  function updateComputedFields() {
+    for (const group of store.groups) {
+      const m = computeGroupMetrics(group);
+      group.cash_on_hand = m.cash;
+      group.profit = m.profit;
+    }
   }
 
   function renderProfit(element, profit) {
@@ -1333,6 +1426,10 @@
       const item = (tx.item || "").toLowerCase();
 
       if (search && !item.includes(search)) {
+        return false;
+      }
+
+      if (uiState.typeFilter && tx.type !== uiState.typeFilter) {
         return false;
       }
 
@@ -1489,7 +1586,7 @@
 
       for (const tx of group.transactions) {
         if (!tx || typeof tx !== "object") return false;
-        if (!tx.id || !tx.type || !tx.item) return false;
+        if (!tx.type || !tx.item) return false;
         if (typeof tx.amount !== "number" && typeof tx.amount !== "string") return false;
         if (!tx.date) return false;
       }
@@ -1510,12 +1607,19 @@
       if (!Array.isArray(group.transactions)) {
         group.transactions = [];
       }
+      if (typeof group.starting_capital !== "number") {
+        group.starting_capital = Number(group.starting_capital) || 0;
+      }
+      group.name = String(group.name || "").trim();
 
       for (const tx of group.transactions) {
         if (!tx.id || seen.has(tx.id)) {
           tx.id = createId();
         }
         seen.add(tx.id);
+        tx.type = String(tx.type).trim();
+        tx.item = String(tx.item || "").trim();
+        tx.amount = Number(tx.amount) || 0;
       }
     }
   }
@@ -1637,9 +1741,9 @@
     return store.groups.find((g) => g.id === store.activeGroupId);
   }
 
-  function addGroup(name) {
+  function addGroup(name, startingCapital = 0) {
     const id = createId();
-    store.groups.push({ id, name: name.trim(), transactions: [] });
+    store.groups.push({ id, name: name.trim(), starting_capital: Number(startingCapital) || 0, transactions: [], cash_on_hand: 0, profit: 0 });
     store.activeGroupId = id;
     writeToStorage();
     render();
@@ -1724,18 +1828,20 @@
   function renderDashboard() {
     const totals = store.groups.reduce(
       (acc, group) => {
-        const groupTotals = calculateTotals(group.transactions);
-        acc.buy += groupTotals.buy;
-        acc.sell += groupTotals.sell;
+        const m = computeGroupMetrics(group);
+        acc.buy += m.buy;
+        acc.sell += m.sell;
+        acc.cash += m.cash;
         return acc;
       },
-      { buy: 0, sell: 0 }
+      { buy: 0, sell: 0, cash: 0 }
     );
 
     const profit = totals.sell - totals.buy;
     elements.dashboardBuy.textContent = formatCurrency(totals.buy);
     elements.dashboardSell.textContent = formatCurrency(totals.sell);
     renderProfit(elements.dashboardProfit, profit);
+    elements.dashboardCash.textContent = formatCurrency(totals.cash);
   }
 
   function renderGroupDetails() {
@@ -1745,9 +1851,11 @@
       elements.transactionForm.style.opacity = "0.45";
       elements.transactionForm.style.pointerEvents = "none";
       elements.transactionList.innerHTML = "";
-      elements.groupBuy.textContent = "$0.00";
-      elements.groupSell.textContent = "$0.00";
-      elements.groupProfit.textContent = "$0.00";
+      elements.groupBuy.textContent = "₱0.00";
+      elements.groupSell.textContent = "₱0.00";
+      elements.groupProfit.textContent = "₱0.00";
+      elements.groupCash.textContent = "₱0.00";
+      elements.groupReceivable.textContent = "₱0.00";
       return;
     }
 
@@ -1755,12 +1863,13 @@
     elements.transactionForm.style.pointerEvents = "auto";
     elements.groupTitle.textContent = active.name;
 
-    const totals = calculateTotals(active.transactions);
-    const profit = totals.sell - totals.buy;
+    const metrics = computeGroupMetrics(active);
 
-    elements.groupBuy.textContent = formatCurrency(totals.buy);
-    elements.groupSell.textContent = formatCurrency(totals.sell);
-    renderProfit(elements.groupProfit, profit);
+    elements.groupBuy.textContent = formatCurrency(metrics.buy);
+    elements.groupSell.textContent = formatCurrency(metrics.sell);
+    renderProfit(elements.groupProfit, metrics.profit);
+    elements.groupCash.textContent = formatCurrency(metrics.cash);
+    elements.groupReceivable.textContent = formatCurrency(metrics.receivable);
 
     elements.transactionList.innerHTML = "";
 
@@ -1814,7 +1923,13 @@ const sorted = [...filtered].sort((a, b) => {
 
       const typeTd = document.createElement("td");
       typeTd.textContent = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
-      typeTd.className = tx.type === "buy" ? "type-buy" : "type-sell";
+      if (tx.type === "buy") {
+        typeTd.className = "type-buy";
+      } else if (tx.type === "sell") {
+        typeTd.className = "type-sell";
+      } else {
+        typeTd.className = "";
+      }
 
       const itemTd = document.createElement("td");
       itemTd.textContent = tx.item;
@@ -1858,7 +1973,10 @@ const sorted = [...filtered].sort((a, b) => {
         {
           id: createId(),
           name: "General",
+          starting_capital: 0,
           transactions: [],
+          cash_on_hand: 0,
+          profit: 0,
         },
       ];
       store.activeGroupId = store.groups[0].id;
@@ -1964,6 +2082,10 @@ elements.sortDesc.addEventListener("click", () => {
       uiState.search = event.target.value;
       renderGroupDetails();
     });
+    elements.filterType.addEventListener("change", (event) => {
+      uiState.typeFilter = event.target.value;
+      renderGroupDetails();
+    });
 
     elements.filterStart.addEventListener("change", (event) => {
       uiState.startDate = event.target.value;
@@ -1979,7 +2101,9 @@ elements.sortDesc.addEventListener("click", () => {
       uiState.search = "";
       uiState.startDate = "";
       uiState.endDate = "";
+      uiState.typeFilter = "";
       elements.searchQuery.value = "";
+      elements.filterType.value = "";
       elements.filterStart.value = "";
       elements.filterEnd.value = "";
       renderGroupDetails();
